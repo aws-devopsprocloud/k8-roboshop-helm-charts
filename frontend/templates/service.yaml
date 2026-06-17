@@ -4,7 +4,6 @@ metadata:
   name: frontend
   namespace: roboshop 
 spec: 
-  type: LoadBalancer
   selector: # selecting the Pod by using the same Pod labels 
     app: frontend 
     project: roboshop 
