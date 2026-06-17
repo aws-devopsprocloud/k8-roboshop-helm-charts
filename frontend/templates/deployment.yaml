@@ -1,0 +1,76 @@
+
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: frontend 
+  namespace: roboshop 
+spec: 
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:  
+      app: frontend 
+      project: roboshop 
+      tier: frontend 
+  template:
+    metadata:
+      name: frontend 
+      labels:
+        app: frontend 
+        project: roboshop 
+        tier: frontend
+    spec: 
+      containers: 
+      - name: frontend 
+        image: "devopsprocloudaws/frontend:{{ .Values.deployment.imageVersion }}"
+        imagePullPolicy: Always
+        ports: 
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "250m"
+            memory: "128Mi"
+        volumeMounts:
+            - name: nginx-conf # volume name 
+              mountPath: /etc/nginx/nginx.conf # where do you want to attach in the pod 
+              subPath: nginx.conf
+              readOnly: true
+      volumes:
+      - name: nginx-conf
+        configMap: # We are creating the volume from the configmap 
+          name: nginx-config
+          items:
+            - key: nginx.conf
+              path: nginx.conf
+
+--- 
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend 
+  namespace: roboshop
+  annotations:
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/certificate-arn: 'arn:aws:acm:us-east-1:453531893439:certificate/0fe90857-384c-4002-9e50-1e6dec4864d2'
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/tags: Environment=dev,Project=roboshop
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: roboshop
+spec:
+  ingressClassName: alb
+  rules:
+  - host: www.devopsprocloud.in
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 80
+
+
+
